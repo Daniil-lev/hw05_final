@@ -35,12 +35,12 @@ class Post(models.Model):
         verbose_name='Группа',
         help_text='Группа, к которой будет относиться пост',
     )
-    
+
     image = models.ImageField(
         'Картинка',
         upload_to='posts/',
         blank=True
-    )  
+    )
 
     def __str__(self):
         return self.text[:15]
@@ -49,6 +49,7 @@ class Post(models.Model):
         ordering = ('-pub_date', )
         verbose_name = 'Пост'
         verbose_name_plural = 'Посты'
+
 
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE,
@@ -60,6 +61,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+
 
 class Follow(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,

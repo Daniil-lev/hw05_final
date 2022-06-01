@@ -18,8 +18,9 @@ class CommentForm(ModelForm):
         help_texts = {'text': 'Текст комментария'}
         fields = ('text',)
 
+
 class FollowForm(ModelForm):
     class Meta:
         model = Follow
         labels = {'user': 'Подписка на:', 'author': 'Автор записи'}
-        fields = ['user']
+        fields = ('user',)
