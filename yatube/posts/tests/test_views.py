@@ -122,14 +122,16 @@ class PostViewTest(TestCase):
         """Шаблон profile сформирован с правильным контекстом"""
         response = self.authorized_client.get(
             reverse('posts:profile', kwargs={'username':
-                                             self.post.author.username}))
+                                             self.post.author.username})
+        )
         post = response.context['page_obj'][0]
         self._assert_post_has_attribs(post)
 
     def test_post_detail_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом"""
         response = self.authorized_client.get(
-            reverse('posts:post_detail', kwargs={'post_id': self.post.pk}))
+            reverse('posts:post_detail', kwargs={'post_id': self.post.pk})
+        )
         post = response.context['post']
         self._assert_post_has_attribs(post)
 
@@ -161,18 +163,20 @@ class PostViewTest(TestCase):
         """Авторизированный пользователь может оставить коментарий"""
 
         coments = {'text': 'тестовый комментарий'}
-        self.authorized_client_2.post(f'/posts/{self.post.id}/comment/',
-                                      data=coments,
-                                      follow=True)
+        self.authorized_client_2.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            data=coments, follow=True
+        )
         response = self.authorized_client_2.get(f'/posts/{self.post.id}/')
         self.assertContains(response, coments['text'])
 
-    def test_add_comment_2(self):
+    def test_anonym_cannot_add_comments(self):
         """НЕ Авторизированный пользователь не может оставить коментарий"""
         coments = {'text': 'комент не пройдет'}
-        self.guest_client.post(f'/posts/{self.post.id}/comment/',
-                               data=coments,
-                               follow=True)
+        self.guest_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            data=coments, follow=True
+        )
         response = self.guest_client.get(f'/posts/{self.post.id}/')
         self.assertNotContains(response, coments['text'])
 
@@ -204,6 +208,16 @@ class PaginatorViewsTest(TestCase):
             slug='test_slug',
             description='Тестовое описание')
         cls.posts = []
+        cls.url_params = ''
+        cls.templates_pages_names = {
+            reverse('posts:index'): 'posts/index.html',
+            reverse('posts:group_list',
+                    kwargs={'slug': cls.group.slug}):
+                        'posts/group_list.html',
+            reverse('posts:profile',
+                    kwargs={'username': cls.author}):
+                        'posts/profile.html',
+        }
 
         for i in range(13):
             cls.posts.append(Post(
@@ -220,18 +234,9 @@ class PaginatorViewsTest(TestCase):
         cache.clear()
 
     def _test_pagination(self, expected_count, url_params=''):
-        templates_pages_names = {
-            reverse('posts:index') + url_params: 'posts/index.html',
-            reverse('posts:group_list',
-                    kwargs={'slug': self.group.slug}) + url_params:
-                        'posts/group_list.html',
-            reverse('posts:profile',
-                    kwargs={'username': self.author}) + url_params:
-                        'posts/profile.html',
-        }
-        for reverse_name, template in templates_pages_names.items():
+        for reverse_name, template in self.templates_pages_names.items():
             with self.subTest(template=template):
-                response = self.client.get(reverse_name)
+                response = self.client.get(reverse_name + url_params)
                 self.assertEqual(
                     len(response.context['page_obj']), expected_count
                 )
@@ -242,6 +247,7 @@ class PaginatorViewsTest(TestCase):
 
     def test_second_page_contains_three_records(self):
         """ Проверяем что пагинатор выдает 3 записи на второй странице"""
+
         self._test_pagination(3, '?page=2')
 
 
@@ -249,6 +255,7 @@ class FollowTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
         cls.user = User.objects.create_user(username='test_user')
         cls.user_following = User.objects.create_user(username='test_user2')
         cls.user_without_post = User.objects.create_user(
@@ -273,49 +280,44 @@ class FollowTests(TestCase):
 
     def test_follow_authorized(self):
         """ Авторизованный пользователь может подписываться"""
-
-        self.client_auth_following.get(reverse('posts:profile_follow',
-                                               kwargs={'username':
-                                                       self.user.
-                                                       username}))
+        self.client_auth_following.get(
+            reverse('posts:profile_follow',
+                    kwargs={'username': self.user.username})
+        )
         self.assertEqual(Follow.objects.all().count(), 1)
 
     def test_follow_guest(self):
         """ не Авторизованный пользователь  не может подписываться"""
-
-        self.guest_client.get(reverse('posts:profile_follow',
-                                      kwargs={'username':
-                                              self.user.
-                                              username}))
+        self.guest_client.get(
+            reverse('posts:profile_follow',
+                    kwargs={'username': self.user.username})
+        )
         self.assertEqual(Follow.objects.all().count(), 0)
 
     def test_unfollow(self):
         """
         Авторизованный пользователь может подписываться и отписаться от автора
         """
+        self.client_auth_following.get(
+            reverse('posts:profile_follow', kwargs={'username':
+                                                    self.user.username})
+        )
 
-        self.client_auth_following.get(reverse('posts:profile_follow',
-                                               kwargs={'username':
-                                                       self.user.
-                                                       username}))
-
-        self.client_auth_following.get(reverse('posts:profile_unfollow',
-                                       kwargs={'username':
-                                               self.user.username}))
+        self.client_auth_following.get(
+            reverse('posts:profile_unfollow', kwargs={'username':
+                                                      self.user.username})
+        )
         self.assertEqual(Follow.objects.all().count(), 0)
 
     def test_subscription_feed(self):
         """запись появляется в ленте подписчиков"""
-        Follow.objects.create(user=self.user_following,
-                              author=self.user)
-        response = self.client_auth_following.get('/follow/')
+        response = self.client_auth_following.get(
+            reverse('posts:follow_index')
+        )
         post = response.context['page_obj'][0].text
         self.assertEqual(post, self.post.text)
 
     def test_subscription_feed(self):
         """Запись не появляется у неподписанных пользователей"""
-
-        Follow.objects.create(user=self.user_following,
-                              author=self.user)
-        response = self.authorized_client.get('/follow/')
+        response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertNotContains(response, self.post.text)

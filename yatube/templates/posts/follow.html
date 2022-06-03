@@ -3,11 +3,11 @@
   лента авторов
 {% endblock %}
 {% block content %}
-     {% include "includes/switcher.html" %}
-    <h1>  Последние обновления ленты  </h1>
-     {% for post in page_obj %}
-       {% include "includes/card_post.html" %}  
-     {% endfor %} 
-     {% include 'includes/paginator.html' %}
+  {% include "includes/switcher.html" %}
+  <h1>  Последние обновления ленты  </h1>
+  {% for post in page_obj %}
+    {% include "includes/card_post.html" %}  
+  {% endfor %} 
+  {% include 'includes/paginator.html' %}
 {% endblock %}  
 
