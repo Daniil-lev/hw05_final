@@ -115,7 +115,7 @@ class PostViewTest(TestCase):
         )
         self.assertNotEqual(
             self.post.group,
-            response.context['page_obj'] == [0]
+            len(response.context['page_obj']) == 0
         )
 
     def test_profile_correct_context(self):
