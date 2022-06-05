@@ -113,10 +113,7 @@ class PostViewTest(TestCase):
                 'posts:group_list',
                 kwargs={'slug': self.group_without_posts.slug})
         )
-        self.assertNotEqual(
-            self.post.group,
-            len(response.context['page_obj']) == 0
-        )
+        self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_profile_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом"""
